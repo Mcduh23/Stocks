@@ -7,8 +7,13 @@
   <style>
     :root{
       --bg:#0b1220; --text:#e5e7eb; --muted:#9aa4b2;
-      --border: rgba(148,163,184,.18); --shadow: 0 18px 60px rgba(0,0,0,.35);
+      --border: rgba(148,163,184,.18);
+      --shadow: 0 18px 60px rgba(0,0,0,.35);
       --r: 18px; --tap: 46px;
+      --good: rgba(34,197,94,.95);
+      --warn: rgba(234,179,8,.95);
+      --bad:  rgba(239,68,68,.95);
+      --acc:  rgba(99,102,241,.95);
     }
     *{ box-sizing:border-box; }
     html, body{ height:100%; }
@@ -45,6 +50,10 @@
       box-shadow: 0 10px 24px rgba(0,0,0,.18);
     }
     .pill strong{ font-weight:900; }
+    .pillDot{
+      width:10px; height:10px; border-radius:999px; display:inline-block;
+      box-shadow: 0 0 0 3px rgba(0,0,0,.18);
+    }
 
     .wrap{
       max-width: 1100px; margin: 0 auto; padding: 14px;
@@ -97,13 +106,16 @@
 
     .badge{
       display:inline-flex; align-items:center; gap:6px;
-      padding: 5px 8px; border-radius: 999px;
+      padding: 6px 10px; border-radius: 999px;
       border: 1px solid rgba(148,163,184,.14);
       background: rgba(16,31,61,.35);
-      font-size: 11px; color: rgba(229,231,235,.92);
+      font-size: 12px; color: rgba(229,231,235,.92);
       user-select:none; white-space: nowrap;
     }
+    .bGood{ border-color: rgba(34,197,94,.28); background: rgba(34,197,94,.12); }
     .bWarn{ border-color: rgba(234,179,8,.28); background: rgba(234,179,8,.12); }
+    .bBad{  border-color: rgba(239,68,68,.26); background: rgba(239,68,68,.10); }
+    .bAcc{  border-color: rgba(99,102,241,.28); background: rgba(99,102,241,.12); }
 
     table{ width:100%; border-collapse: collapse; }
     th, td{
@@ -153,6 +165,15 @@
     .stat .s{ margin-top:4px; font-size:12px; color: rgba(154,164,178,.92); }
     .grid2{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
     @media (max-width: 520px){ .grid2{ grid-template-columns: 1fr; } }
+
+    .chartWrap{
+      border-radius: 16px;
+      border: 1px solid rgba(148,163,184,.14);
+      background: rgba(16,31,61,.24);
+      overflow:hidden;
+    }
+    svg{ width:100%; height:auto; display:block; }
+    .small{ font-size:11px; color: rgba(154,164,178,.92); }
   </style>
 </head>
 <body>
@@ -160,12 +181,13 @@
     <div class="topwrap">
       <div>
         <h1>MSOS Pulse (Long-Term)</h1>
-        <div class="sub">If you run locally, we use a CORS-safe fallback for price/candles. GitHub Pages will work too.</div>
+        <div class="sub">Phase 1: Regime badge + Risk score + Add/Fair/Trim zones + Bias summary. No API key.</div>
       </div>
       <div class="pillrow">
+        <span class="pill"><span id="regDot" class="pillDot" style="background: rgba(148,163,184,.6)"></span><strong>Regime</strong> <span id="signalText">—</span></span>
+        <span class="pill"><strong>Risk</strong> <span id="riskText" class="mono">—</span></span>
         <span class="pill"><strong>Price</strong> <span id="priceText" class="mono">—</span></span>
         <span class="pill"><strong>Day</strong> <span id="dayText" class="mono">—</span></span>
-        <span class="pill"><strong>Regime</strong> <span id="signalText">—</span></span>
         <span class="pill"><strong>Status</strong> <span id="statusText">Idle</span></span>
         <span class="pill"><strong>Updated</strong> <span id="updatedText" class="mono">—</span></span>
       </div>
@@ -207,13 +229,40 @@
 
     <div class="card">
       <div class="cardHead">
-        <div class="cardTitle">Portfolio + Long-term levels</div>
+        <div class="cardTitle">MSOS Snapshot</div>
         <div class="row">
           <button class="ghost" onclick="exportData()">Export</button>
           <button class="ghost" onclick="reset()">Reset</button>
         </div>
       </div>
+
       <div class="cardBody">
+        <div class="chartWrap">
+          <svg id="miniChart" viewBox="0 0 520 220" aria-label="MSOS mini chart"></svg>
+        </div>
+
+        <div style="height:10px;"></div>
+
+        <div class="row">
+          <span id="biasBadge" class="badge bWarn"><b>Bias</b> —</span>
+          <span id="zoneBadge" class="badge bWarn"><b>Zone</b> —</span>
+          <span class="badge bAcc"><b>MA200</b> <span id="ma200Text" class="mono">—</span></span>
+          <span class="badge bWarn"><b>RSI</b> <span id="rsiText" class="mono">—</span></span>
+          <span class="badge bWarn"><b>ATR</b> <span id="atrText" class="mono">—</span></span>
+        </div>
+
+        <div style="height:10px;"></div>
+
+        <details open>
+          <summary>
+            <span class="badge bAcc"><b>AI Coach Summary</b></span>
+            <span class="badge bWarn">Rule-based</span>
+          </summary>
+          <div class="detailsBody" id="coachText">—</div>
+        </details>
+
+        <div style="height:10px;"></div>
+
         <div class="grid2">
           <div>
             <div class="hint" style="margin-top:0;">Shares you own (optional)</div>
@@ -242,7 +291,7 @@
 
         <div style="height:10px;"></div>
 
-        <details open>
+        <details>
           <summary>
             <span class="badge bWarn"><b>Regime + Levels</b></span>
             <span class="badge bWarn">Framework</span>
@@ -251,14 +300,14 @@
         </details>
 
         <div class="hint">
-          If Price still shows “—”, it means your browser blocked direct Stooq and the proxy failed. Put this on GitHub Pages and it should work.
+          Zones are anchored to MA200 ± ATR bands for long-term decisions (add on weakness, trim into strength).
         </div>
       </div>
     </div>
   </div>
 
 <script>
-const STORE_KEY = "msos_pulse_longterm_v2_corsfix";
+const STORE_KEY = "msos_pulse_phase1_v1";
 const AUTO_REFRESH_MS = 5 * 60_000;
 
 let state = loadState();
@@ -266,7 +315,6 @@ let autoTimer = null;
 
 function nowMs(){ return Date.now(); }
 function safeStr(x){ return (x == null ? "" : String(x)); }
-function clamp(n,min,max){ return Math.max(min, Math.min(max, n)); }
 function nOrNull(x){
   const n = Number(String(x ?? "").trim());
   return Number.isFinite(n) ? n : null;
@@ -335,18 +383,11 @@ async function fetchText(url){
   return res.text();
 }
 function jinaProxy(url){
-  // r.jina.ai renders remote content as text and typically sends permissive CORS.
-  // Accepts both http and https.
   const u = url.startsWith("https://") ? url : url.replace(/^http:\/\//, "https://");
   return `https://r.jina.ai/${u}`;
 }
 async function fetchTextWithFallback(url){
-  const attempts = [
-    url,
-    jinaProxy(url),
-    jinaProxy(jinaProxy(url)),
-  ];
-
+  const attempts = [url, jinaProxy(url), jinaProxy(jinaProxy(url))];
   let lastErr = null;
   for (const a of attempts){
     try{
@@ -360,7 +401,9 @@ async function fetchTextWithFallback(url){
   throw new Error(`Price/Candles blocked (CORS). Tried direct + proxies. Last: ${lastErr?.message ?? "unknown"}`);
 }
 
-/* ===== indicators ===== */
+/* =========================
+   Indicators
+========================= */
 function sma(values, period){
   if (!values || values.length < period) return null;
   let sum = 0;
@@ -385,15 +428,16 @@ function rsi14(closes){
 function atr14(highs, lows, closes){
   const period = 14;
   if (!highs || !lows || !closes || highs.length < period + 1) return null;
-  const trs = [];
-  for (let i = 1; i < highs.length; i++){
-    const h = highs[i], l = lows[i], pc = closes[i-1];
-    trs.push(Math.max(h - l, Math.abs(h - pc), Math.abs(l - pc)));
-  }
-  if (trs.length < period) return null;
   let sum = 0;
-  for (let i = trs.length - period; i < trs.length; i++) sum += trs[i];
-  return sum / period;
+  let count = 0;
+  for (let i = highs.length - period; i < highs.length; i++){
+    if (i <= 0) continue;
+    const h = highs[i], l = lows[i], pc = closes[i-1];
+    const tr = Math.max(h - l, Math.abs(h - pc), Math.abs(l - pc));
+    if (!Number.isFinite(tr)) continue;
+    sum += tr; count += 1;
+  }
+  return count ? (sum / count) : null;
 }
 function highest(values, period){
   if (!values || values.length < period) return null;
@@ -401,13 +445,15 @@ function highest(values, period){
   for (let i = values.length - period; i < values.length; i++) m = Math.max(m, values[i]);
   return m;
 }
+function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
 
-/* ===== Stooq candles (CORS-safe) ===== */
+/* =========================
+   Candles
+========================= */
 async function fetchMsosCandles(){
   const url = "https://stooq.com/q/d/l/?s=msos.us&i=d";
   const text = await fetchTextWithFallback(url);
 
-  // Some proxies add leading lines; find the header row.
   const lines = text.trim().split(/\r?\n/);
   const headerIdx = lines.findIndex(l => l.toLowerCase().startsWith("date,open,high,low,close"));
   if (headerIdx === -1) throw new Error("Candles parse failed: header not found.");
@@ -420,15 +466,17 @@ async function fetchMsosCandles(){
     if (![open,high,low,close].every(Number.isFinite)) continue;
     dates.push(cols[0]); o.push(open); h.push(high); l.push(low); c.push(close);
   }
-  if (c.length < 50) throw new Error("Candles parse failed: too few rows.");
+  if (c.length < 220) throw new Error("Candles parse failed: too few rows.");
 
   const keep = 520;
   const cut = Math.max(0, c.length - keep);
   return { dates: dates.slice(cut), o:o.slice(cut), h:h.slice(cut), l:l.slice(cut), c:c.slice(cut), source:"Stooq" };
 }
 
-/* ===== Long-term regime + levels ===== */
-function computeLongTerm(candles){
+/* =========================
+   Phase 1 Model
+========================= */
+function computePhase1(candles){
   const closes = candles.c;
   const highs = candles.h;
   const lows  = candles.l;
@@ -446,72 +494,163 @@ function computeLongTerm(candles){
   const above200 = (ma200 != null) ? (price > ma200) : null;
   const bull = (ma50 != null && ma200 != null) ? (ma50 > ma200) : null;
 
+  // Zones around MA200
+  const atrSafe = Number.isFinite(atr) ? atr : (Number.isFinite(ma200) ? 0.05 * ma200 : 0);
+  const addTop   = (ma200 != null) ? (ma200 - 0.25 * atrSafe) : null;
+  const addBot   = (ma200 != null) ? (ma200 - 1.25 * atrSafe) : null;
+  const fairTop  = (ma200 != null) ? (ma200 + 0.75 * atrSafe) : null;
+  const fairBot  = (ma200 != null) ? (ma200 - 0.25 * atrSafe) : null;
+  const trimBot  = (ma200 != null) ? (ma200 + 0.75 * atrSafe) : null;
+  const trimTop  = (ma200 != null) ? (ma200 + 2.00 * atrSafe) : null;
+
+  let zone = "—";
+  if (ma200 != null){
+    if (price <= addTop) zone = "ADD";
+    else if (price < trimBot) zone = "FAIR";
+    else zone = "TRIM";
+  }
+
+  // Bias / Regime
   let regime = "HOLD";
-  const why = [];
-  const warn = [];
+  const bullets = [];
+  const cautions = [];
 
   if (above200 === false){
     regime = "REDUCE";
-    warn.push("Below MA200 (long-term downtrend risk)");
+    cautions.push("Price below MA200 (long-term trend risk).");
   } else if (above200 === true && bull === true){
     regime = "ACCUMULATE";
-    why.push("Above MA200 and MA50>MA200 (bull regime)");
+    bullets.push("Above MA200 and MA50>MA200 (bull regime).");
   } else if (above200 === true){
     regime = "HOLD";
-    why.push("Above MA200 (trend intact)");
-    if (bull === false) warn.push("MA50<MA200 (bull regime not confirmed)");
+    bullets.push("Above MA200 (trend intact).");
+    if (bull === false) cautions.push("MA50<MA200 (bull regime not confirmed).");
   }
 
-  if (rsi != null && rsi > 72){
+  if (rsi != null && rsi < 35){
+    bullets.push(`RSI is washed (${rsi.toFixed(0)}): long-term add territory.`);
+    if (regime === "HOLD") regime = "ACCUMULATE";
+  }
+  if (rsi != null && rsi > 65){
+    cautions.push(`RSI is extended (${rsi.toFixed(0)}): consider trimming into strength.`);
     if (regime === "ACCUMULATE") regime = "HOLD";
-    warn.push(`RSI overbought (${rsi.toFixed(0)})`);
   }
 
+  // Risk score (0-100)
+  // 50 baseline, add risk for below MA200 / high RSI / high vol; reduce risk for oversold.
+  const volPct = (Number.isFinite(atrSafe) && Number.isFinite(price) && price > 0) ? (atrSafe / price) * 100 : null;
+  let risk = 50;
+  if (above200 === false) risk += 20;
+  if (bull === false) risk += 8;
+  if (rsi != null && rsi > 65) risk += 10;
+  if (rsi != null && rsi < 35) risk -= 15;
+  if (volPct != null){
+    if (volPct > 6) risk += 12;
+    else if (volPct > 4) risk += 6;
+    else if (volPct < 2.5) risk -= 4;
+  }
+  risk = clamp(Math.round(risk), 0, 100);
+
+  // Long-term “levels”
   const riskLine = (ma200 != null)
-    ? (ma200 - (Number.isFinite(atr) ? 1.0 * atr : 0.05 * ma200))
-    : (Number.isFinite(atr) ? (price - 2.0 * atr) : (price * 0.90));
+    ? (ma200 - 1.0 * atrSafe)
+    : (Number.isFinite(atrSafe) ? (price - 2.0 * atrSafe) : (price * 0.90));
 
-  const addZoneLow = (ma200 != null) ? ma200 : null;
-  const addZoneHigh = (ma200 != null)
-    ? (ma200 + (Number.isFinite(atr) ? 1.0 * atr : 0.03 * ma200))
-    : null;
-
-  const trimByAtr = Number.isFinite(atr) ? (ma200 != null ? (ma200 + 4.0 * atr) : (price + 4.0 * atr)) : null;
-  const trimByHi = (hi252 != null) ? (0.98 * hi252) : null;
   const trimZone = Math.max(
-    Number.isFinite(trimByAtr) ? trimByAtr : -Infinity,
-    Number.isFinite(trimByHi) ? trimByHi : -Infinity
+    Number.isFinite(trimTop) ? trimTop : -Infinity,
+    (hi252 != null) ? (0.98 * hi252) : -Infinity
   );
 
-  return { price, dayPct, ma50, ma200, rsi, atr, hi252, regime, why, warn, riskLine, addZoneLow, addZoneHigh, trimZone };
+  return {
+    price, dayPct,
+    ma50, ma200, rsi, atr: atrSafe, volPct, hi252,
+    above200, bull,
+    zone, regime, risk,
+    riskLine, addBot, addTop, fairBot, fairTop, trimBot, trimTop, trimZone,
+    bullets, cautions
+  };
+}
+
+function regimeColor(regime){
+  if (regime === "ACCUMULATE") return getComputedStyle(document.documentElement).getPropertyValue("--good").trim();
+  if (regime === "HOLD") return getComputedStyle(document.documentElement).getPropertyValue("--warn").trim();
+  return getComputedStyle(document.documentElement).getPropertyValue("--bad").trim();
+}
+function zoneBadgeClass(zone){
+  if (zone === "ADD") return "bGood";
+  if (zone === "FAIR") return "bAcc";
+  if (zone === "TRIM") return "bWarn";
+  return "bWarn";
+}
+function biasBadgeClass(regime){
+  if (regime === "ACCUMULATE") return "bGood";
+  if (regime === "HOLD") return "bWarn";
+  return "bBad";
+}
+
+function makeCoachText(sig){
+  const lines = [];
+  lines.push(`Bias: ${sig.regime}`);
+  lines.push(`Risk score: ${sig.risk}/100`);
+  lines.push(`Zone: ${sig.zone}`);
+  lines.push("");
+
+  if (sig.bullets.length){
+    lines.push("Why:");
+    sig.bullets.forEach(x => lines.push(`- ✅ ${x}`));
+    lines.push("");
+  }
+  if (sig.cautions.length){
+    lines.push("Watch-outs:");
+    sig.cautions.forEach(x => lines.push(`- ⚠️ ${x}`));
+    lines.push("");
+  }
+
+  lines.push("Zones (anchored to MA200 + ATR):");
+  if (sig.ma200 != null){
+    lines.push(`- Add zone: ≤ ${sig.addTop.toFixed(2)} (deep add below ~${sig.addTop.toFixed(2)})`);
+    lines.push(`- Fair zone: ${sig.fairBot.toFixed(2)} → ${sig.fairTop.toFixed(2)}`);
+    lines.push(`- Trim zone: ≥ ${sig.trimBot.toFixed(2)} (into strength)`);
+  } else {
+    lines.push("- Zones unavailable (need more candle history).");
+  }
+  lines.push("");
+
+  lines.push("Key levels:");
+  lines.push(`- Risk line (trend break): ${sig.riskLine.toFixed(2)}`);
+  lines.push(`- Trim zone target (strength): ${sig.trimZone.toFixed(2)}`);
+
+  return lines.join("\n");
 }
 
 function levelsText(sig, shares, avgCost){
   const lines = [];
-  lines.push(`Regime: ${sig.regime}\n`);
-
-  if (sig.why.length){
-    lines.push("Why:");
-    sig.why.forEach(x => lines.push(`- ✅ ${x}`));
-    lines.push("");
-  }
-  if (sig.warn.length){
-    lines.push("Warnings:");
-    sig.warn.forEach(x => lines.push(`- ⚠️ ${x}`));
-    lines.push("");
-  }
-
-  lines.push("Long-term levels (framework):");
-  lines.push(`- Risk line (trend break): ${sig.riskLine.toFixed(2)}`);
-  lines.push(`- Add zone (pullback area): ${sig.addZoneLow == null ? "—" : sig.addZoneLow.toFixed(2)} → ${sig.addZoneHigh == null ? "—" : sig.addZoneHigh.toFixed(2)}`);
-  lines.push(`- Trim zone (into strength): ${sig.trimZone.toFixed(2)}\n`);
+  lines.push(`Regime: ${sig.regime}`);
+  lines.push(`Zone: ${sig.zone}`);
+  lines.push(`Risk score: ${sig.risk}/100`);
+  lines.push("");
 
   lines.push("Snapshot:");
   lines.push(`- Price: ${sig.price.toFixed(2)} (${pct(sig.dayPct)} vs prior close)`);
   lines.push(`- MA50/MA200: ${fmt(sig.ma50)} / ${fmt(sig.ma200)}`);
   lines.push(`- RSI(14): ${sig.rsi == null ? "—" : sig.rsi.toFixed(0)}`);
-  lines.push(`- ATR(14): ${sig.atr == null ? "—" : sig.atr.toFixed(2)}`);
-  lines.push(`- ~52w high: ${sig.hi252 == null ? "—" : sig.hi252.toFixed(2)}\n`);
+  lines.push(`- ATR(14): ${sig.atr == null ? "—" : sig.atr.toFixed(2)} (${sig.volPct == null ? "—" : sig.volPct.toFixed(2) + "%"} of price)`);
+  lines.push("");
+
+  lines.push("Zones:");
+  if (sig.ma200 != null){
+    lines.push(`- Add: ${sig.addBot.toFixed(2)} → ${sig.addTop.toFixed(2)}`);
+    lines.push(`- Fair: ${sig.fairBot.toFixed(2)} → ${sig.fairTop.toFixed(2)}`);
+    lines.push(`- Trim: ${sig.trimBot.toFixed(2)} → ${sig.trimTop.toFixed(2)}`);
+  } else {
+    lines.push("- —");
+  }
+  lines.push("");
+
+  lines.push("Key levels:");
+  lines.push(`- Risk line: ${sig.riskLine.toFixed(2)}`);
+  lines.push(`- Trim strength: ${sig.trimZone.toFixed(2)}`);
+  lines.push("");
 
   if (Number.isFinite(shares) && shares > 0){
     lines.push(`If you own ${shares} shares:`);
@@ -520,14 +659,118 @@ function levelsText(sig, shares, avgCost){
       const pl = (sig.price - avgCost) * shares;
       lines.push(`- Est. P/L vs avg cost ${avgCost.toFixed(2)}: ${money(pl)}`);
     }
-    lines.push(`- Risk to risk-line ≈ ${money(Math.max(0, (sig.price - sig.riskLine) * shares))}\n`);
   }
 
+  lines.push("");
   lines.push("Reminder: mechanical framework, not financial advice.");
+
   return lines.join("\n");
 }
 
-/* ===== GDELT news ===== */
+/* =========================
+   Mini chart (zones + price + MA200)
+========================= */
+function ns(tag){ return document.createElementNS("http://www.w3.org/2000/svg", tag); }
+function svgEl(tag, attrs){
+  const el = ns(tag);
+  for (const [k,v] of Object.entries(attrs || {})) el.setAttribute(k, String(v));
+  return el;
+}
+function drawMiniChart(candles, sig){
+  const svg = document.getElementById("miniChart");
+  svg.innerHTML = "";
+
+  const W = 520, H = 220;
+  const pad = { l: 14, r: 12, t: 10, b: 18 };
+  const iw = W - pad.l - pad.r;
+  const ih = H - pad.t - pad.b;
+
+  const closes = candles.c.slice(-180);
+  const n = closes.length;
+
+  // y-range: include zones if present
+  let minY = Math.min(...closes);
+  let maxY = Math.max(...closes);
+  const zoneVals = [];
+  if (sig.ma200 != null){
+    zoneVals.push(sig.addBot, sig.addTop, sig.fairBot, sig.fairTop, sig.trimBot, sig.trimTop, sig.ma200);
+  }
+  for (const z of zoneVals) if (Number.isFinite(z)){ minY = Math.min(minY, z); maxY = Math.max(maxY, z); }
+  const range = Math.max(1e-6, maxY - minY);
+  minY -= 0.06 * range; maxY += 0.06 * range;
+
+  const x = (i)=> pad.l + (i/(n-1)) * iw;
+  const y = (v)=> pad.t + (1 - (v - minY) / (maxY - minY)) * ih;
+
+  // background
+  svg.appendChild(svgEl("rect", { x:0, y:0, width:W, height:H, fill:"rgba(0,0,0,0)" }));
+
+  // zones
+  function band(y1, y2, fill){
+    if (!Number.isFinite(y1) || !Number.isFinite(y2)) return;
+    const top = Math.min(y(y1), y(y2));
+    const bot = Math.max(y(y1), y(y2));
+    svg.appendChild(svgEl("rect", { x:pad.l, y:top, width:iw, height:Math.max(0, bot-top), fill }));
+  }
+  // Add zone (green-ish), Fair (blue-ish), Trim (yellow-ish)
+  band(sig.addBot, sig.addTop, "rgba(34,197,94,.10)");
+  band(sig.fairBot, sig.fairTop, "rgba(99,102,241,.10)");
+  band(sig.trimBot, sig.trimTop, "rgba(234,179,8,.10)");
+
+  // grid lines
+  for (let i=0;i<=4;i++){
+    const yy = pad.t + (i/4)*ih;
+    svg.appendChild(svgEl("line", { x1:pad.l, y1:yy, x2:pad.l+iw, y2:yy, stroke:"rgba(148,163,184,.14)", "stroke-width":1 }));
+  }
+
+  // MA200 line
+  if (sig.ma200 != null){
+    const yy = y(sig.ma200);
+    svg.appendChild(svgEl("line", { x1:pad.l, y1:yy, x2:pad.l+iw, y2:yy, stroke:"rgba(99,102,241,.55)", "stroke-width":2, "stroke-dasharray":"6 6" }));
+  }
+
+  // price path
+  let d = "";
+  for (let i=0;i<n;i++){
+    const px = x(i), py = y(closes[i]);
+    d += (i===0 ? `M ${px} ${py}` : ` L ${px} ${py}`);
+  }
+  svg.appendChild(svgEl("path", {
+    d,
+    fill:"none",
+    stroke:"rgba(229,231,235,.92)",
+    "stroke-width":2.2,
+    "stroke-linejoin":"round",
+    "stroke-linecap":"round",
+    opacity: 0.95
+  }));
+
+  // last price marker
+  const lastX = x(n-1);
+  const lastY = y(closes[n-1]);
+  svg.appendChild(svgEl("circle", { cx:lastX, cy:lastY, r:4.6, fill:regimeColor(sig.regime), stroke:"rgba(0,0,0,.25)", "stroke-width":1 }));
+
+  // labels (min / max)
+  const tMin = svgEl("text", { x: pad.l, y: H-4, fill:"rgba(154,164,178,.92)", "font-size":11, "text-anchor":"start", "font-family":"system-ui, -apple-system, Segoe UI, Roboto, sans-serif" });
+  tMin.textContent = `${minY.toFixed(2)}`;
+  svg.appendChild(tMin);
+
+  const tMax = svgEl("text", { x: pad.l, y: 14, fill:"rgba(154,164,178,.92)", "font-size":11, "text-anchor":"start", "font-family":"system-ui, -apple-system, Segoe UI, Roboto, sans-serif" });
+  tMax.textContent = `${maxY.toFixed(2)}`;
+  svg.appendChild(tMax);
+
+  const tLast = svgEl("text", { x: W-12, y: 14, fill:"rgba(229,231,235,.92)", "font-size":12, "text-anchor":"end", "font-weight":"800", "font-family":"system-ui, -apple-system, Segoe UI, Roboto, sans-serif" });
+  tLast.textContent = `Last: ${sig.price.toFixed(2)}`;
+  svg.appendChild(tLast);
+
+  const tZone = svgEl("text", { x: W-12, y: H-4, fill:"rgba(154,164,178,.92)", "font-size":11, "text-anchor":"end", "font-family":"system-ui, -apple-system, Segoe UI, Roboto, sans-serif" });
+  tZone.textContent = `Zones: ADD / FAIR / TRIM`;
+  svg.appendChild(tZone);
+}
+
+/* =========================
+   News (GDELT)
+========================= */
 function gdeltQueryUrl(){
   const to = new Date();
   const from = new Date(nowMs() - 7 * 24 * 60 * 60_000);
@@ -560,9 +803,9 @@ function hashKey(item){
 function classify(title){
   const t = title.toLowerCase();
   const has = (...w)=>w.some(x=>t.includes(x));
-  if (has("schedule iii","reschedul","dea","hhs","federal","descheduling","controlled substances")) return { tag:"Policy", cls:"bWarn", bucket:"policy" };
-  if (has("safe banking","banking","congress","senate","house","bill","vote","legislation")) return { tag:"Policy", cls:"bWarn", bucket:"policy" };
-  if (has("lawsuit","sues","attorney general","antitrust","price-fixing","probe","investigation","settlement")) return { tag:"Legal", cls:"bWarn", bucket:"legal" };
+  if (has("schedule iii","reschedul","dea","hhs","federal","descheduling","controlled substances")) return { tag:"Policy", cls:"bAcc", bucket:"policy" };
+  if (has("safe banking","banking","congress","senate","house","bill","vote","legislation")) return { tag:"Policy", cls:"bAcc", bucket:"policy" };
+  if (has("lawsuit","sues","attorney general","antitrust","price-fixing","probe","investigation","settlement")) return { tag:"Legal", cls:"bBad", bucket:"legal" };
   if (has("earnings","guidance","revenue","ebitda","results","quarter","q1","q2","q3","q4")) return { tag:"Earnings", cls:"bWarn", bucket:"earnings" };
   if (has("etf","flows","inflows","outflows","short","options","volume","rally","selloff","plunge")) return { tag:"Market", cls:"bWarn", bucket:"markets" };
   return { tag:"Other", cls:"bWarn", bucket:"all" };
@@ -612,7 +855,9 @@ function renderNews(){
   }
 }
 
-/* ===== Portfolio render ===== */
+/* =========================
+   Portfolio + UI render
+========================= */
 function readPortfolioInputs(){
   state.shares = nOrNull(document.getElementById("shares").value);
   state.avgCost = nOrNull(document.getElementById("avgCost").value);
@@ -624,19 +869,55 @@ function renderPortfolio(){
     document.getElementById("priceText").textContent = "—";
     document.getElementById("dayText").textContent = "—";
     document.getElementById("signalText").textContent = "—";
+    document.getElementById("riskText").textContent = "—";
     document.getElementById("posVal").textContent = "—";
     document.getElementById("posValSub").textContent = "Waiting for candles…";
     document.getElementById("plVal").textContent = "—";
     document.getElementById("plValSub").textContent = "—";
     document.getElementById("levelsText").textContent = "—";
+    document.getElementById("coachText").textContent = "—";
+    document.getElementById("ma200Text").textContent = "—";
+    document.getElementById("rsiText").textContent = "—";
+    document.getElementById("atrText").textContent = "—";
+    document.getElementById("biasBadge").className = "badge bWarn";
+    document.getElementById("biasBadge").innerHTML = "<b>Bias</b> —";
+    document.getElementById("zoneBadge").className = "badge bWarn";
+    document.getElementById("zoneBadge").innerHTML = "<b>Zone</b> —";
+    document.getElementById("regDot").style.background = "rgba(148,163,184,.6)";
+    document.getElementById("miniChart").innerHTML = "";
     return;
   }
 
-  const sig = computeLongTerm(state.candles);
+  const sig = computePhase1(state.candles);
+
+  // Pills
   document.getElementById("priceText").textContent = sig.price.toFixed(2);
   document.getElementById("dayText").textContent = pct(sig.dayPct);
   document.getElementById("signalText").textContent = sig.regime;
+  document.getElementById("riskText").textContent = `${sig.risk}/100`;
+  document.getElementById("regDot").style.background = regimeColor(sig.regime);
 
+  // Snapshot badges
+  document.getElementById("ma200Text").textContent = fmt(sig.ma200);
+  document.getElementById("rsiText").textContent = sig.rsi == null ? "—" : sig.rsi.toFixed(0);
+  document.getElementById("atrText").textContent = sig.atr == null ? "—" : sig.atr.toFixed(2);
+
+  const bias = document.getElementById("biasBadge");
+  bias.className = `badge ${biasBadgeClass(sig.regime)}`;
+  bias.innerHTML = `<b>Bias</b> ${escapeHtml(sig.regime)}`;
+
+  const zone = document.getElementById("zoneBadge");
+  zone.className = `badge ${zoneBadgeClass(sig.zone)}`;
+  zone.innerHTML = `<b>Zone</b> ${escapeHtml(sig.zone)}`;
+
+  // Coach text + levels
+  document.getElementById("coachText").textContent = makeCoachText(sig);
+  document.getElementById("levelsText").textContent = levelsText(sig, state.shares, state.avgCost);
+
+  // Mini chart
+  drawMiniChart(state.candles, sig);
+
+  // Portfolio
   const shares = state.shares;
   const avgCost = state.avgCost;
 
@@ -656,16 +937,16 @@ function renderPortfolio(){
     document.getElementById("plVal").textContent = "—";
     document.getElementById("plValSub").textContent = "Enter avg cost for P/L";
   }
-
-  document.getElementById("levelsText").textContent = levelsText(sig, shares, avgCost);
 }
 
-/* ===== refresh / init ===== */
+/* =========================
+   Refresh / init
+========================= */
 async function refreshNow(){
   try{
     setStatus("Refreshing…");
     const [candlesRes] = await Promise.all([
-      fetchMsosCandles().catch((e)=>{ throw e; }),
+      fetchMsosCandles(),
       fetchNews().catch(()=>null),
     ]);
 
@@ -677,7 +958,6 @@ async function refreshNow(){
     setStatus("Ready");
   }catch(e){
     setStatus("Price blocked");
-    // keep the UI responsive and tell you exactly why
     alert(e?.message ?? String(e));
   }
 }
