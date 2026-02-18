@@ -1,0 +1,733 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1, viewport-fit=cover" />
+  <title>MSOS Pulse (Long-Term)</title>
+  <style>
+    :root{
+      --bg:#0b1220; --text:#e5e7eb; --muted:#9aa4b2;
+      --border: rgba(148,163,184,.18); --shadow: 0 18px 60px rgba(0,0,0,.35);
+      --r: 18px; --tap: 46px;
+    }
+    *{ box-sizing:border-box; }
+    html, body{ height:100%; }
+    body{
+      margin:0;
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(900px 420px at 20% 10%, rgba(99,102,241,.18), transparent 55%),
+        radial-gradient(900px 420px at 80% 0%, rgba(124,58,237,.14), transparent 55%),
+        linear-gradient(180deg, #070b14, var(--bg));
+    }
+    .topbar{
+      position:sticky; top:0; z-index:20;
+      padding: 14px 14px 12px;
+      background: linear-gradient(180deg, rgba(7,11,20,.92), rgba(7,11,20,.65));
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(148,163,184,.12);
+    }
+    .topwrap{
+      max-width: 1100px; margin:0 auto;
+      display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+      flex-wrap:wrap;
+    }
+    h1{ margin:0; font-size:16px; letter-spacing:.2px; }
+    .sub{ margin-top:4px; font-size:12px; color: var(--muted); line-height:1.25; }
+    .pillrow{ display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding: 8px 10px; border-radius: 999px;
+      border: 1px solid rgba(148,163,184,.16);
+      background: rgba(15,26,51,.55);
+      font-size:12px; user-select:none; white-space:nowrap;
+      box-shadow: 0 10px 24px rgba(0,0,0,.18);
+    }
+    .pill strong{ font-weight:900; }
+
+    .wrap{
+      max-width: 1100px; margin: 0 auto; padding: 14px;
+      display:grid; grid-template-columns: 1.2fr .8fr; gap: 12px;
+    }
+    @media (max-width: 980px){ .wrap{ grid-template-columns: 1fr; } }
+
+    .card{
+      border-radius: var(--r);
+      background: linear-gradient(180deg, rgba(15,26,51,.75), rgba(15,26,51,.55));
+      border: 1px solid rgba(148,163,184,.14);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .cardHead{
+      padding: 12px;
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      border-bottom: 1px solid rgba(148,163,184,.10);
+      background: linear-gradient(180deg, rgba(15,26,51,.88), rgba(15,26,51,.50));
+    }
+    .cardTitle{ font-size:13px; font-weight: 900; letter-spacing: .3px; }
+    .cardBody{ padding: 12px; }
+
+    button, input, select{
+      height: var(--tap);
+      border-radius: 14px;
+      border: 1px solid rgba(148,163,184,.18);
+      background: rgba(16,31,61,.45);
+      color: rgba(229,231,235,.95);
+      font-size:14px;
+      box-shadow: 0 16px 36px rgba(0,0,0,.18);
+    }
+    button{ padding: 0 12px; cursor:pointer; user-select:none; touch-action:manipulation; }
+    button:active{ transform: translateY(1px); }
+    button.primary{
+      border-color: rgba(99,102,241,.40);
+      background: linear-gradient(135deg, rgba(99,102,241,.35), rgba(124,58,237,.22));
+      font-weight: 900;
+    }
+    button.ghost{ background: rgba(16,31,61,.25); color: rgba(154,164,178,.95); }
+    input, select{ padding: 0 12px; outline:none; }
+    input:focus, select:focus{
+      border-color: rgba(99,102,241,.45);
+      box-shadow: 0 0 0 4px rgba(99,102,241,.12), 0 16px 36px rgba(0,0,0,.18);
+    }
+
+    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .mono{ font-variant-numeric: tabular-nums; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    .hint{ margin-top:10px; font-size:12px; color: rgba(154,164,178,.92); line-height:1.35; }
+
+    .badge{
+      display:inline-flex; align-items:center; gap:6px;
+      padding: 5px 8px; border-radius: 999px;
+      border: 1px solid rgba(148,163,184,.14);
+      background: rgba(16,31,61,.35);
+      font-size: 11px; color: rgba(229,231,235,.92);
+      user-select:none; white-space: nowrap;
+    }
+    .bWarn{ border-color: rgba(234,179,8,.28); background: rgba(234,179,8,.12); }
+
+    table{ width:100%; border-collapse: collapse; }
+    th, td{
+      padding: 10px 8px;
+      border-bottom: 1px solid rgba(148,163,184,.10);
+      text-align:left;
+      font-size: 12px;
+      vertical-align: top;
+    }
+    th{
+      font-size:11px;
+      color: rgba(154,164,178,.92);
+      background: rgba(16,31,61,.40);
+      letter-spacing:.02em;
+      text-transform: uppercase;
+      position: sticky; top: 0;
+    }
+    a{ color: rgba(199,210,254,.92); text-decoration: none; }
+    a:hover{ text-decoration: underline; }
+
+    details{
+      border-radius: 16px;
+      border: 1px solid rgba(148,163,184,.14);
+      background: rgba(16,31,61,.30);
+      overflow:hidden;
+    }
+    summary{
+      list-style:none; cursor:pointer; padding: 12px;
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      user-select:none;
+    }
+    summary::-webkit-details-marker{ display:none; }
+    .detailsBody{
+      padding: 12px; border-top: 1px solid rgba(148,163,184,.10);
+      color: rgba(154,164,178,.92); font-size: 12px; white-space: pre-wrap; line-height: 1.35;
+    }
+
+    .statGrid{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+    @media (max-width: 520px){ .statGrid{ grid-template-columns: 1fr; } }
+    .stat{
+      border-radius: 16px; border: 1px solid rgba(148,163,184,.14);
+      background: rgba(16,31,61,.30);
+      padding: 12px; box-shadow: 0 18px 46px rgba(0,0,0,.16);
+    }
+    .stat .k{ font-size:11px; color: rgba(154,164,178,.90); letter-spacing:.02em; text-transform:uppercase; }
+    .stat .v{ margin-top:6px; font-size:18px; font-weight: 950; }
+    .stat .s{ margin-top:4px; font-size:12px; color: rgba(154,164,178,.92); }
+    .grid2{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+    @media (max-width: 520px){ .grid2{ grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topwrap">
+      <div>
+        <h1>MSOS Pulse (Long-Term)</h1>
+        <div class="sub">If you run locally, we use a CORS-safe fallback for price/candles. GitHub Pages will work too.</div>
+      </div>
+      <div class="pillrow">
+        <span class="pill"><strong>Price</strong> <span id="priceText" class="mono">—</span></span>
+        <span class="pill"><strong>Day</strong> <span id="dayText" class="mono">—</span></span>
+        <span class="pill"><strong>Regime</strong> <span id="signalText">—</span></span>
+        <span class="pill"><strong>Status</strong> <span id="statusText">Idle</span></span>
+        <span class="pill"><strong>Updated</strong> <span id="updatedText" class="mono">—</span></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="card">
+      <div class="cardHead">
+        <div class="cardTitle">News (last 7 days)</div>
+        <div class="row">
+          <select id="filter" onchange="renderAll()">
+            <option value="all">All</option>
+            <option value="policy">Policy / Regulation</option>
+            <option value="legal">Legal / Lawsuit</option>
+            <option value="earnings">Earnings / Guidance</option>
+            <option value="markets">Market / ETF flow</option>
+          </select>
+          <button class="ghost" onclick="toggleAuto()"><span id="autoText">Auto: On</span></button>
+          <button class="primary" onclick="refreshNow()">Refresh</button>
+        </div>
+      </div>
+      <div class="cardBody" style="padding:0;">
+        <div style="max-height: 70vh; overflow:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:120px;">When</th>
+                <th style="width:110px;">Tag</th>
+                <th>Headline</th>
+                <th style="width:90px;">Source</th>
+              </tr>
+            </thead>
+            <tbody id="newsRows"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="cardHead">
+        <div class="cardTitle">Portfolio + Long-term levels</div>
+        <div class="row">
+          <button class="ghost" onclick="exportData()">Export</button>
+          <button class="ghost" onclick="reset()">Reset</button>
+        </div>
+      </div>
+      <div class="cardBody">
+        <div class="grid2">
+          <div>
+            <div class="hint" style="margin-top:0;">Shares you own (optional)</div>
+            <input id="shares" inputmode="decimal" placeholder="e.g., 120" />
+          </div>
+          <div>
+            <div class="hint" style="margin-top:0;">Avg cost (optional)</div>
+            <input id="avgCost" inputmode="decimal" placeholder="e.g., 7.85" />
+          </div>
+        </div>
+
+        <div style="height:10px;"></div>
+
+        <div class="statGrid">
+          <div class="stat">
+            <div class="k">Position value</div>
+            <div class="v" id="posVal">—</div>
+            <div class="s" id="posValSub">Based on last close</div>
+          </div>
+          <div class="stat">
+            <div class="k">P/L (est.)</div>
+            <div class="v" id="plVal">—</div>
+            <div class="s" id="plValSub">Requires avg cost</div>
+          </div>
+        </div>
+
+        <div style="height:10px;"></div>
+
+        <details open>
+          <summary>
+            <span class="badge bWarn"><b>Regime + Levels</b></span>
+            <span class="badge bWarn">Framework</span>
+          </summary>
+          <div class="detailsBody" id="levelsText">—</div>
+        </details>
+
+        <div class="hint">
+          If Price still shows “—”, it means your browser blocked direct Stooq and the proxy failed. Put this on GitHub Pages and it should work.
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+const STORE_KEY = "msos_pulse_longterm_v2_corsfix";
+const AUTO_REFRESH_MS = 5 * 60_000;
+
+let state = loadState();
+let autoTimer = null;
+
+function nowMs(){ return Date.now(); }
+function safeStr(x){ return (x == null ? "" : String(x)); }
+function clamp(n,min,max){ return Math.max(min, Math.min(max, n)); }
+function nOrNull(x){
+  const n = Number(String(x ?? "").trim());
+  return Number.isFinite(n) ? n : null;
+}
+function money(n){
+  if (!Number.isFinite(n)) return "—";
+  return n.toLocaleString(undefined, { style:"currency", currency:"USD" });
+}
+function pct(n){
+  if (!Number.isFinite(n)) return "—";
+  return n >= 0 ? `+${n.toFixed(2)}%` : `${n.toFixed(2)}%`;
+}
+function fmt(n){ return Number.isFinite(n) ? n.toFixed(2) : "—"; }
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if (!raw) return freshState();
+    const obj = JSON.parse(raw);
+    if (!obj || typeof obj !== "object") return freshState();
+    return {
+      auto: obj.auto !== false,
+      lastUpdated: Number(obj.lastUpdated || 0),
+      candles: obj.candles || null,
+      news: Array.isArray(obj.news) ? obj.news : [],
+      newsHash: obj.newsHash && typeof obj.newsHash === "object" ? obj.newsHash : {},
+      shares: nOrNull(obj.shares),
+      avgCost: nOrNull(obj.avgCost),
+    };
+  }catch{
+    return freshState();
+  }
+}
+function freshState(){
+  return { auto:true, lastUpdated:0, candles:null, news:[], newsHash:{}, shares:null, avgCost:null };
+}
+function persist(){ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+
+function setStatus(t){ document.getElementById("statusText").textContent = t; }
+function setUpdatedLabel(){
+  const el = document.getElementById("updatedText");
+  if (!state.lastUpdated){ el.textContent = "—"; return; }
+  const s = Math.floor((nowMs() - state.lastUpdated) / 1000);
+  el.textContent = `${s}s ago`;
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, (c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+}
+function agoLabel(iso){
+  const d = new Date(iso);
+  if (!Number.isFinite(d.getTime())) return "—";
+  const diff = Math.max(0, nowMs() - d.getTime());
+  const min = Math.floor(diff / 60000);
+  if (min < 60) return `${min}m`;
+  const hr = Math.floor(min / 60);
+  if (hr < 48) return `${hr}h`;
+  return `${Math.floor(hr / 24)}d`;
+}
+
+/* =========================
+   CORS-safe fetch fallback
+========================= */
+async function fetchText(url){
+  const res = await fetch(url, { cache:"no-store" });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.text();
+}
+function jinaProxy(url){
+  // r.jina.ai renders remote content as text and typically sends permissive CORS.
+  // Accepts both http and https.
+  const u = url.startsWith("https://") ? url : url.replace(/^http:\/\//, "https://");
+  return `https://r.jina.ai/${u}`;
+}
+async function fetchTextWithFallback(url){
+  const attempts = [
+    url,
+    jinaProxy(url),
+    jinaProxy(jinaProxy(url)),
+  ];
+
+  let lastErr = null;
+  for (const a of attempts){
+    try{
+      const txt = await fetchText(a);
+      if (txt && txt.length > 20) return txt;
+      lastErr = new Error("Empty response");
+    }catch(e){
+      lastErr = e;
+    }
+  }
+  throw new Error(`Price/Candles blocked (CORS). Tried direct + proxies. Last: ${lastErr?.message ?? "unknown"}`);
+}
+
+/* ===== indicators ===== */
+function sma(values, period){
+  if (!values || values.length < period) return null;
+  let sum = 0;
+  for (let i = values.length - period; i < values.length; i++) sum += values[i];
+  return sum / period;
+}
+function rsi14(closes){
+  const period = 14;
+  if (!closes || closes.length < period + 1) return null;
+  let gains = 0, losses = 0;
+  for (let i = closes.length - period; i < closes.length; i++){
+    const diff = closes[i] - closes[i-1];
+    if (diff >= 0) gains += diff;
+    else losses += -diff;
+  }
+  const avgGain = gains / period;
+  const avgLoss = losses / period;
+  if (avgLoss === 0) return 100;
+  const rs = avgGain / avgLoss;
+  return 100 - (100 / (1 + rs));
+}
+function atr14(highs, lows, closes){
+  const period = 14;
+  if (!highs || !lows || !closes || highs.length < period + 1) return null;
+  const trs = [];
+  for (let i = 1; i < highs.length; i++){
+    const h = highs[i], l = lows[i], pc = closes[i-1];
+    trs.push(Math.max(h - l, Math.abs(h - pc), Math.abs(l - pc)));
+  }
+  if (trs.length < period) return null;
+  let sum = 0;
+  for (let i = trs.length - period; i < trs.length; i++) sum += trs[i];
+  return sum / period;
+}
+function highest(values, period){
+  if (!values || values.length < period) return null;
+  let m = -Infinity;
+  for (let i = values.length - period; i < values.length; i++) m = Math.max(m, values[i]);
+  return m;
+}
+
+/* ===== Stooq candles (CORS-safe) ===== */
+async function fetchMsosCandles(){
+  const url = "https://stooq.com/q/d/l/?s=msos.us&i=d";
+  const text = await fetchTextWithFallback(url);
+
+  // Some proxies add leading lines; find the header row.
+  const lines = text.trim().split(/\r?\n/);
+  const headerIdx = lines.findIndex(l => l.toLowerCase().startsWith("date,open,high,low,close"));
+  if (headerIdx === -1) throw new Error("Candles parse failed: header not found.");
+
+  const dates=[], o=[], h=[], l=[], c=[];
+  for (let i = headerIdx + 1; i < lines.length; i++){
+    const cols = lines[i].split(",");
+    if (cols.length < 5) continue;
+    const open = Number(cols[1]), high = Number(cols[2]), low = Number(cols[3]), close = Number(cols[4]);
+    if (![open,high,low,close].every(Number.isFinite)) continue;
+    dates.push(cols[0]); o.push(open); h.push(high); l.push(low); c.push(close);
+  }
+  if (c.length < 50) throw new Error("Candles parse failed: too few rows.");
+
+  const keep = 520;
+  const cut = Math.max(0, c.length - keep);
+  return { dates: dates.slice(cut), o:o.slice(cut), h:h.slice(cut), l:l.slice(cut), c:c.slice(cut), source:"Stooq" };
+}
+
+/* ===== Long-term regime + levels ===== */
+function computeLongTerm(candles){
+  const closes = candles.c;
+  const highs = candles.h;
+  const lows  = candles.l;
+
+  const price = closes[closes.length - 1];
+  const prev = closes.length > 1 ? closes[closes.length - 2] : null;
+  const dayPct = (prev && prev !== 0) ? ((price - prev) / prev) * 100 : null;
+
+  const ma50  = sma(closes, 50);
+  const ma200 = sma(closes, 200);
+  const rsi = rsi14(closes);
+  const atr = atr14(highs, lows, closes);
+  const hi252 = highest(closes, 252) ?? highest(closes, 200);
+
+  const above200 = (ma200 != null) ? (price > ma200) : null;
+  const bull = (ma50 != null && ma200 != null) ? (ma50 > ma200) : null;
+
+  let regime = "HOLD";
+  const why = [];
+  const warn = [];
+
+  if (above200 === false){
+    regime = "REDUCE";
+    warn.push("Below MA200 (long-term downtrend risk)");
+  } else if (above200 === true && bull === true){
+    regime = "ACCUMULATE";
+    why.push("Above MA200 and MA50>MA200 (bull regime)");
+  } else if (above200 === true){
+    regime = "HOLD";
+    why.push("Above MA200 (trend intact)");
+    if (bull === false) warn.push("MA50<MA200 (bull regime not confirmed)");
+  }
+
+  if (rsi != null && rsi > 72){
+    if (regime === "ACCUMULATE") regime = "HOLD";
+    warn.push(`RSI overbought (${rsi.toFixed(0)})`);
+  }
+
+  const riskLine = (ma200 != null)
+    ? (ma200 - (Number.isFinite(atr) ? 1.0 * atr : 0.05 * ma200))
+    : (Number.isFinite(atr) ? (price - 2.0 * atr) : (price * 0.90));
+
+  const addZoneLow = (ma200 != null) ? ma200 : null;
+  const addZoneHigh = (ma200 != null)
+    ? (ma200 + (Number.isFinite(atr) ? 1.0 * atr : 0.03 * ma200))
+    : null;
+
+  const trimByAtr = Number.isFinite(atr) ? (ma200 != null ? (ma200 + 4.0 * atr) : (price + 4.0 * atr)) : null;
+  const trimByHi = (hi252 != null) ? (0.98 * hi252) : null;
+  const trimZone = Math.max(
+    Number.isFinite(trimByAtr) ? trimByAtr : -Infinity,
+    Number.isFinite(trimByHi) ? trimByHi : -Infinity
+  );
+
+  return { price, dayPct, ma50, ma200, rsi, atr, hi252, regime, why, warn, riskLine, addZoneLow, addZoneHigh, trimZone };
+}
+
+function levelsText(sig, shares, avgCost){
+  const lines = [];
+  lines.push(`Regime: ${sig.regime}\n`);
+
+  if (sig.why.length){
+    lines.push("Why:");
+    sig.why.forEach(x => lines.push(`- ✅ ${x}`));
+    lines.push("");
+  }
+  if (sig.warn.length){
+    lines.push("Warnings:");
+    sig.warn.forEach(x => lines.push(`- ⚠️ ${x}`));
+    lines.push("");
+  }
+
+  lines.push("Long-term levels (framework):");
+  lines.push(`- Risk line (trend break): ${sig.riskLine.toFixed(2)}`);
+  lines.push(`- Add zone (pullback area): ${sig.addZoneLow == null ? "—" : sig.addZoneLow.toFixed(2)} → ${sig.addZoneHigh == null ? "—" : sig.addZoneHigh.toFixed(2)}`);
+  lines.push(`- Trim zone (into strength): ${sig.trimZone.toFixed(2)}\n`);
+
+  lines.push("Snapshot:");
+  lines.push(`- Price: ${sig.price.toFixed(2)} (${pct(sig.dayPct)} vs prior close)`);
+  lines.push(`- MA50/MA200: ${fmt(sig.ma50)} / ${fmt(sig.ma200)}`);
+  lines.push(`- RSI(14): ${sig.rsi == null ? "—" : sig.rsi.toFixed(0)}`);
+  lines.push(`- ATR(14): ${sig.atr == null ? "—" : sig.atr.toFixed(2)}`);
+  lines.push(`- ~52w high: ${sig.hi252 == null ? "—" : sig.hi252.toFixed(2)}\n`);
+
+  if (Number.isFinite(shares) && shares > 0){
+    lines.push(`If you own ${shares} shares:`);
+    lines.push(`- Position value: ${money(sig.price * shares)}`);
+    if (Number.isFinite(avgCost) && avgCost > 0){
+      const pl = (sig.price - avgCost) * shares;
+      lines.push(`- Est. P/L vs avg cost ${avgCost.toFixed(2)}: ${money(pl)}`);
+    }
+    lines.push(`- Risk to risk-line ≈ ${money(Math.max(0, (sig.price - sig.riskLine) * shares))}\n`);
+  }
+
+  lines.push("Reminder: mechanical framework, not financial advice.");
+  return lines.join("\n");
+}
+
+/* ===== GDELT news ===== */
+function gdeltQueryUrl(){
+  const to = new Date();
+  const from = new Date(nowMs() - 7 * 24 * 60 * 60_000);
+  const format = (d)=>{
+    const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,"0"),
+      day=String(d.getDate()).padStart(2,"0"), hh=String(d.getHours()).padStart(2,"0"),
+      mm=String(d.getMinutes()).padStart(2,"0"), ss=String(d.getSeconds()).padStart(2,"0");
+    return `${y}${m}${day}${hh}${mm}${ss}`;
+  };
+  const query = [
+    '("MSOS" OR "AdvisorShares Pure US Cannabis" OR "MSOS ETF")',
+    'OR (cannabis OR marijuana OR "U.S. cannabis")',
+    'AND (rescheduling OR "Schedule III" OR DEA OR HHS OR SAFE OR banking OR 280E OR lawsuit OR earnings OR guidance OR legalization OR referendum OR ballot OR "federal reform")'
+  ].join(" ");
+  const u = new URL("https://api.gdeltproject.org/api/v2/doc/doc");
+  u.searchParams.set("query", query);
+  u.searchParams.set("mode", "ArtList");
+  u.searchParams.set("format", "json");
+  u.searchParams.set("maxrecords", "120");
+  u.searchParams.set("startdatetime", format(from));
+  u.searchParams.set("enddatetime", format(to));
+  u.searchParams.set("sort", "HybridRel");
+  return u.toString();
+}
+function hashKey(item){
+  const a = safeStr(item.url).toLowerCase().trim();
+  const b = safeStr(item.title).toLowerCase().trim();
+  return `${a}||${b}`;
+}
+function classify(title){
+  const t = title.toLowerCase();
+  const has = (...w)=>w.some(x=>t.includes(x));
+  if (has("schedule iii","reschedul","dea","hhs","federal","descheduling","controlled substances")) return { tag:"Policy", cls:"bWarn", bucket:"policy" };
+  if (has("safe banking","banking","congress","senate","house","bill","vote","legislation")) return { tag:"Policy", cls:"bWarn", bucket:"policy" };
+  if (has("lawsuit","sues","attorney general","antitrust","price-fixing","probe","investigation","settlement")) return { tag:"Legal", cls:"bWarn", bucket:"legal" };
+  if (has("earnings","guidance","revenue","ebitda","results","quarter","q1","q2","q3","q4")) return { tag:"Earnings", cls:"bWarn", bucket:"earnings" };
+  if (has("etf","flows","inflows","outflows","short","options","volume","rally","selloff","plunge")) return { tag:"Market", cls:"bWarn", bucket:"markets" };
+  return { tag:"Other", cls:"bWarn", bucket:"all" };
+}
+async function fetchNews(){
+  const res = await fetch(gdeltQueryUrl(), { cache: "no-store" });
+  if (!res.ok) throw new Error(`News fetch failed: HTTP ${res.status}`);
+  const data = await res.json();
+  const items = Array.isArray(data?.articles) ? data.articles : [];
+  const out = [];
+  for (const it of items){
+    const k = hashKey(it);
+    if (state.newsHash[k]) continue;
+    state.newsHash[k] = true;
+    const title = safeStr(it.title);
+    const url = safeStr(it.url);
+    const seenAt = safeStr(it.seendate) || safeStr(it.datetime) || "";
+    const cls = classify(title);
+    out.push({ title, url, source: safeStr(it.source) || "—", seendate: seenAt, when: agoLabel(seenAt), tag: cls.tag, cls: cls.cls, bucket: cls.bucket });
+  }
+  out.sort((a,b)=> (new Date(b.seendate).getTime()||0) - (new Date(a.seendate).getTime()||0));
+  state.news = [...out, ...state.news].slice(0, 400);
+  persist();
+}
+function filterNews(){
+  const val = document.getElementById("filter").value;
+  if (val === "all") return state.news;
+  return state.news.filter(n => n.bucket === val);
+}
+function renderNews(){
+  const rows = document.getElementById("newsRows");
+  rows.innerHTML = "";
+  const items = filterNews().slice(0, 120);
+  if (!items.length){
+    rows.innerHTML = `<tr><td colspan="4" style="color: rgba(154,164,178,.92); padding: 16px;">No news yet. Hit Refresh.</td></tr>`;
+    return;
+  }
+  for (const n of items){
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="mono">${escapeHtml(n.when)}</td>
+      <td><span class="badge ${escapeHtml(n.cls)}">${escapeHtml(n.tag)}</span></td>
+      <td><a href="${escapeHtml(n.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(n.title)}</a></td>
+      <td class="mono" style="color: rgba(154,164,178,.92);">${escapeHtml(n.source || "—")}</td>
+    `;
+    rows.appendChild(tr);
+  }
+}
+
+/* ===== Portfolio render ===== */
+function readPortfolioInputs(){
+  state.shares = nOrNull(document.getElementById("shares").value);
+  state.avgCost = nOrNull(document.getElementById("avgCost").value);
+  persist();
+  renderPortfolio();
+}
+function renderPortfolio(){
+  if (!state.candles?.c?.length){
+    document.getElementById("priceText").textContent = "—";
+    document.getElementById("dayText").textContent = "—";
+    document.getElementById("signalText").textContent = "—";
+    document.getElementById("posVal").textContent = "—";
+    document.getElementById("posValSub").textContent = "Waiting for candles…";
+    document.getElementById("plVal").textContent = "—";
+    document.getElementById("plValSub").textContent = "—";
+    document.getElementById("levelsText").textContent = "—";
+    return;
+  }
+
+  const sig = computeLongTerm(state.candles);
+  document.getElementById("priceText").textContent = sig.price.toFixed(2);
+  document.getElementById("dayText").textContent = pct(sig.dayPct);
+  document.getElementById("signalText").textContent = sig.regime;
+
+  const shares = state.shares;
+  const avgCost = state.avgCost;
+
+  if (Number.isFinite(shares) && shares > 0){
+    document.getElementById("posVal").textContent = money(sig.price * shares);
+    document.getElementById("posValSub").textContent = `${shares} shares × ${sig.price.toFixed(2)}`;
+  } else {
+    document.getElementById("posVal").textContent = "—";
+    document.getElementById("posValSub").textContent = "Enter shares to calculate";
+  }
+
+  if (Number.isFinite(shares) && shares > 0 && Number.isFinite(avgCost) && avgCost > 0){
+    const pl = (sig.price - avgCost) * shares;
+    document.getElementById("plVal").textContent = money(pl);
+    document.getElementById("plValSub").textContent = `Avg cost ${avgCost.toFixed(2)}`;
+  } else {
+    document.getElementById("plVal").textContent = "—";
+    document.getElementById("plValSub").textContent = "Enter avg cost for P/L";
+  }
+
+  document.getElementById("levelsText").textContent = levelsText(sig, shares, avgCost);
+}
+
+/* ===== refresh / init ===== */
+async function refreshNow(){
+  try{
+    setStatus("Refreshing…");
+    const [candlesRes] = await Promise.all([
+      fetchMsosCandles().catch((e)=>{ throw e; }),
+      fetchNews().catch(()=>null),
+    ]);
+
+    state.candles = candlesRes;
+    state.lastUpdated = nowMs();
+    persist();
+
+    renderAll();
+    setStatus("Ready");
+  }catch(e){
+    setStatus("Price blocked");
+    // keep the UI responsive and tell you exactly why
+    alert(e?.message ?? String(e));
+  }
+}
+function renderAll(){
+  renderNews();
+  renderPortfolio();
+}
+function schedule(){
+  if (autoTimer) clearInterval(autoTimer);
+  if (!state.auto) return;
+  autoTimer = setInterval(()=> refreshNow(), AUTO_REFRESH_MS);
+}
+function toggleAuto(){
+  state.auto = !state.auto;
+  persist();
+  document.getElementById("autoText").textContent = `Auto: ${state.auto ? "On" : "Off"}`;
+  schedule();
+}
+function exportData(){
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type:"application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "msos-pulse-export.json";
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+function reset(){
+  if (!confirm("Reset MSOS Pulse data?")) return;
+  localStorage.removeItem(STORE_KEY);
+  state = freshState();
+  boot();
+}
+function debounce(fn, ms){ let t=null; return (...args)=>{ if (t) clearTimeout(t); t=setTimeout(()=>fn(...args), ms); }; }
+
+function boot(){
+  document.getElementById("autoText").textContent = `Auto: ${state.auto ? "On" : "Off"}`;
+  document.getElementById("shares").value = state.shares == null ? "" : String(state.shares);
+  document.getElementById("avgCost").value = state.avgCost == null ? "" : String(state.avgCost);
+
+  document.getElementById("shares").addEventListener("input", debounce(readPortfolioInputs, 250));
+  document.getElementById("avgCost").addEventListener("input", debounce(readPortfolioInputs, 250));
+
+  setUpdatedLabel();
+  setInterval(setUpdatedLabel, 1000);
+  schedule();
+
+  renderAll();
+  refreshNow();
+}
+boot();
+</script>
+</body>
+</html>
